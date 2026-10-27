@@ -25,8 +25,12 @@ async function selfTest(res) {
   if (!me.ok) return res.status(200).json({ ok: false, reason: "Telegram не принял токен — скопируйте его заново из @BotFather", telegram: me.description });
   const chat_id = await chatId();
   if (!chat_id) return res.status(200).json({ ok: false, bot: "@" + me.result.username, reason: "Бот не знает, куда писать: откройте @" + me.result.username + " в Telegram, нажмите Start (или отправьте /start) и обновите эту страницу" });
-  const s = await tg("sendMessage", { chat_id, text: "✅ Приёмная Сержа подключена. Сюда будут приходить поручения от Полины." });
-  return res.status(200).json(s.ok ? { ok: true, bot: "@" + me.result.username, message: "Тестовое сообщение отправлено — проверьте Telegram" } : { ok: false, reason: s.description });
+  const fixed = !!process.env.TELEGRAM_CHAT_ID;
+  const s = await tg("sendMessage", { chat_id, text: "✅ Приёмная Сержа подключена. Сюда будут приходить поручения от Полины." + (fixed ? "" : "\n\nВаш номер чата: " + chat_id + "\nДобавьте его в Netlify как TELEGRAM_CHAT_ID, чтобы поручения всегда шли только вам.") });
+  return res.status(200).json(s.ok
+    ? { ok: true, bot: "@" + me.result.username, message: "Тестовое сообщение отправлено — проверьте Telegram", chat_id: String(chat_id),
+        next: fixed ? "Номер чата закреплён — всё готово" : "Добавьте в Netlify переменную TELEGRAM_CHAT_ID = " + chat_id + " и сделайте Redeploy" }
+    : { ok: false, reason: s.description });
 }
 
 module.exports = async (req, res) => {
