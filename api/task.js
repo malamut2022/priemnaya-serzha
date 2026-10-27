@@ -18,7 +18,19 @@ async function chatId() {
   return list.length ? list[list.length - 1].chat.id : null;
 }
 
+// Проверка: откройте в браузере  /api/task  — бот пришлёт тестовое сообщение или покажет причину.
+async function selfTest(res) {
+  if (!process.env.TELEGRAM_BOT_TOKEN) return res.status(200).json({ ok: false, reason: "На сервере не задан TELEGRAM_BOT_TOKEN (Netlify → Site configuration → Environment variables), после добавления нужен Redeploy" });
+  const me = await tg("getMe", {});
+  if (!me.ok) return res.status(200).json({ ok: false, reason: "Telegram не принял токен — скопируйте его заново из @BotFather", telegram: me.description });
+  const chat_id = await chatId();
+  if (!chat_id) return res.status(200).json({ ok: false, bot: "@" + me.result.username, reason: "Бот не знает, куда писать: откройте @" + me.result.username + " в Telegram, нажмите Start (или отправьте /start) и обновите эту страницу" });
+  const s = await tg("sendMessage", { chat_id, text: "✅ Приёмная Сержа подключена. Сюда будут приходить поручения от Полины." });
+  return res.status(200).json(s.ok ? { ok: true, bot: "@" + me.result.username, message: "Тестовое сообщение отправлено — проверьте Telegram" } : { ok: false, reason: s.description });
+}
+
 module.exports = async (req, res) => {
+  if (req.method === "GET") return selfTest(res);
   if (req.method !== "POST") return res.status(405).json({ error: "Только POST" });
   if (!process.env.TELEGRAM_BOT_TOKEN) return res.status(200).json({ skipped: "Telegram не настроен" });
   let body = req.body;
