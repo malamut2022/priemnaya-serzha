@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Приёмная Сержа</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Forum&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0}
+
+/* Layout: Полина на весь экран; поверх — латунная табличка сверху и небольшое стеклянное окно разговора внизу справа (на телефоне — внизу во всю ширину) */
+:root{
+  color-scheme: dark;
+  --walnut:#1c1410;
+  --glass:rgba(28,20,16,.72);
+  --glass-2:rgba(255,240,220,.08);
+  --line:rgba(217,183,122,.28);
+  --ink:#f6ede1;
+  --muted:#c9b5a1;
+  --brass:#d9b77a;
+  --brass-ink:#2a1d10;
+  --ok:#8fc29a; --warn:#e8a06a;
+  --display:"Forum","Times New Roman",serif;
+  --body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --gap:max(16px, env(safe-area-inset-left,0px));
+}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden}
+body{background:var(--walnut);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+/* Сцена */
+.stage{position:fixed;inset:0;background:#0d0907;overflow:hidden}
+.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:38% 50%;transition:opacity .5s ease}
+.stage .fade{opacity:0}
+.stage::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(to bottom,rgba(15,10,7,.55),transparent 22%,transparent 60%,rgba(15,10,7,.6))}
+
+/* Верх */
+.top{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;
+  padding:calc(14px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+.brand h1{margin:0;font-family:var(--display);font-weight:400;font-size:clamp(24px,3.4vw,36px);line-height:1;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+.status{margin-top:6px;display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 3px rgba(232,160,106,.3)}
+.dot.in{background:var(--ok);box-shadow:0 0 0 3px rgba(143,194,154,.3)}
+.tbtns{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px}
+.chip:hover{border-color:var(--brass)}
+.chip[aria-pressed="true"]{background:var(--brass);color:var(--brass-ink);border-color:var(--brass)}
+
+/* Кнопка входа */
+.cta{position:fixed;left:50%;bottom:calc(9% + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:4;background:var(--brass);color:var(--brass-ink);border:0;border-radius:999px;
+  padding:14px 26px;font-weight:600;font-size:16px;display:inline-flex;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.4);white-space:nowrap}
+.cta:hover{filter:brightness(1.06)}
+
+/* Окно разговора */
+.dialog{position:fixed;z-index:6;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:min(380px,calc(100vw - 32px));
+  max-height:min(52vh,520px);display:flex;flex-direction:column;background:var(--glass);backdrop-filter:blur(16px) saturate(1.1);-webkit-backdrop-filter:blur(16px) saturate(1.1);
+  border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.45);overflow:hidden}
+@media (max-width:640px){
+  .dialog{left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));width:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px));max-height:46vh}
+}
+.dhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px 8px 14px;border-bottom:1px solid var(--line)}
+.dhead .who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.dhead b{font-family:var(--display);font-weight:400;font-size:19px;color:var(--ink)}
+.speaking{display:inline-flex;gap:2px;align-items:flex-end;height:12px}
+.speaking i{width:2px;background:var(--brass);border-radius:1px;height:4px}
+.speaking.on i{animation:eq .8s ease-in-out infinite}
+.speaking.on i:nth-child(2){animation-delay:.15s}.speaking.on i:nth-child(3){animation-delay:.3s}
+@keyframes eq{50%{height:12px}}
+.iconsm{width:30px;height:30px;border-radius:8px;border:0;background:transparent;display:grid;place-items:center;color:var(--muted)}
+.iconsm:hover{background:var(--glass-2);color:var(--ink)}
+.iconsm svg{width:16px;height:16px}
+.log{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:60px}
+.msg{max-width:88%;padding:8px 11px;border-radius:13px;background:var(--glass-2);white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.msg .w{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.msg.visitor{align-self:flex-end;background:rgba(217,183,122,.22);border-bottom-right-radius:4px}
+.msg.polina,.msg.serge{align-self:flex-start;border-bottom-left-radius:4px}
+.msg.serge .w{color:var(--brass)}
+.msg.typing{color:var(--muted);font-style:italic}
+.noted{align-self:flex-start;display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--brass);border:1px dashed rgba(217,183,122,.5);border-radius:999px;padding:3px 9px}
+.noted svg{width:13px;height:13px}
+.compose{padding:10px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.row{display:flex;gap:6px;align-items:flex-end}
+textarea{flex:1;min-width:0;resize:none;background:rgba(0,0,0,.25);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:9px 11px;font:inherit;font-size:14px;min-height:42px;max-height:110px}
+textarea::placeholder{color:var(--muted)}
+.ib{width:42px;height:42px;flex:none;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.25);display:grid;place-items:center}
+.ib svg{width:19px;height:19px}
+.ib.send{background:var(--brass);color:var(--brass-ink);border-color:var(--brass)}
+.ib.rec{background:#8a3424;border-color:#d0614a;color:#fff}
+.hint{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);min-height:15px}
+.timer{flex:1;max-width:120px;height:3px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}
+.timer i{display:block;height:100%;width:0;background:var(--brass)}
+.warn{font-size:12px;color:var(--warn)}
+.mini{position:fixed;z-index:6;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+
+/* Кабинет */
+.office{position:fixed;inset:0;z-index:8;background:rgba(20,14,10,.94);backdrop-filter:blur(8px);overflow-y:auto;
+  padding:calc(18px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.office-in{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.office-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.office h2{margin:0;font-family:var(--display);font-weight:400;font-size:30px}
+.switch{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px}
+.switch button{border:0;background:transparent;border-radius:999px;padding:7px 14px;font-size:13px;color:var(--muted)}
+.switch button[aria-pressed="true"]{background:var(--brass);color:var(--brass-ink)}
+.tasks{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:12px}
+.task{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:rgba(255,240,220,.04);min-width:0}
+.task.done{opacity:.6}
+.task-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.pill{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pill.urgent{color:var(--warn);border-color:var(--warn)} .pill.new{color:var(--brass);border-color:var(--brass)}
+.task p{margin:0;overflow-wrap:anywhere}
+.meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+details summary{cursor:pointer;font-size:13px;color:var(--muted)}
+.thread{display:flex;flex-direction:column;gap:6px;margin-top:8px;max-height:260px;overflow-y:auto}
+.thread .msg{max-width:100%;font-size:13px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.acts input{flex:1;min-width:0;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--ink);font:inherit;font-size:13px}
+.empty{color:var(--muted);border:1px dashed var(--line);border-radius:12px;padding:24px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ---- Телефон: Полина видна, внизу компактная лента сообщений и строка ввода ---- */
+@media (max-width:640px), (max-height:520px){
+  .top{padding-top:calc(10px + env(safe-area-inset-top,0px))}
+  .brand h1{font-size:22px}
+  .status{font-size:10px;margin-top:4px}
+  .chip{padding:6px 11px;font-size:12px}
+  .stage video{object-position:40% 30%}
+  .dialog{left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));width:auto;
+    bottom:calc(10px + env(safe-area-inset-bottom,0px));max-height:none;background:transparent;border:0;box-shadow:none;
+    backdrop-filter:none;-webkit-backdrop-filter:none;overflow:visible;gap:6px}
+  .dhead{position:absolute;right:0;top:-34px;border:0;padding:0}
+  .dhead .who{display:none}
+  .iconsm{background:var(--glass);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--line)}
+  .log{max-height:22vh;min-height:0;padding:0 2px;gap:6px;
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 22px);mask-image:linear-gradient(to bottom,transparent 0,#000 22px)}
+  .log::before{content:"";flex:1 0 18px}
+  .msg{background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);font-size:13.5px;padding:7px 10px;max-width:84%}
+  .msg.visitor{background:rgba(70,52,30,.78)}
+  .msg .w{display:none}
+  .noted{background:var(--glass);font-size:11px}
+  .compose{border:1px solid var(--line);border-radius:16px;padding:6px;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);gap:4px}
+  textarea{min-height:38px;padding:8px 10px;font-size:16px;border-radius:11px}
+  .ib{width:38px;height:38px;border-radius:11px}
+  .hint{font-size:10px;padding:0 4px;min-height:12px}
+  .warn{font-size:11px;padding:0 4px}
+  .mini{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  .cta{bottom:calc(6% + env(safe-area-inset-bottom,0px))}
+}
+
+
+/* ---- Клавиатура на телефоне: Полина «видеозвонком» сверху, под ней сообщения и поле — всё выше клавиатуры ---- */
+@media (max-width:640px), (max-height:520px){
+  body.kb .top, body.kb .hint, body.kb .dhead{display:none}
+  body.kb .stage{bottom:auto;height:30vh;height:30svh}
+  body.kb .stage video{object-position:40% 25%}
+  body.kb .stage::after{background:none}
+  body.kb .dialog{top:calc(30vh + 6px);top:calc(30svh + 6px);bottom:auto}
+  body.kb .log{max-height:12vh;max-height:12svh}
+  body.kb .warn{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="stage" aria-hidden="true">
+  <video id="write" src="writing.mp4" muted loop playsinline preload="auto"></video>
+  <video id="talk" poster="say/still.jpg" preload="auto" playsinline></video>
+</div>
+
+<div class="top">
+  <div class="brand">
+    <h1>Приёмная Сержа</h1>
+    <div class="status"><span class="dot" id="dot"></span><span id="statusText">Сержа нет — принимает Полина</span></div>
+  </div>
+  <div class="tbtns">
+    <button class="chip" id="soundBtn" aria-pressed="true">Звук: вкл</button>
+  </div>
+</div>
+
+<button class="cta" id="cta">Поговорить с Полиной <span aria-hidden="true">›</span></button>
+
+<section class="dialog" id="dialog" hidden aria-label="Разговор с Полиной">
+  <div class="dhead">
+    <div class="who"><b>Полина</b><span class="speaking" id="eq"><i></i><i></i><i></i></span><span id="sub">секретарь</span></div>
+    <button class="iconsm" id="minBtn" title="Свернуть" aria-label="Свернуть окно">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 12h12"/></svg>
+    </button>
+  </div>
+  <div class="log" id="log" aria-live="polite"></div>
+  <form class="compose" id="form">
+    <div class="row">
+      <textarea id="msg" rows="1" placeholder="Напишите или скажите…"></textarea>
+      <button type="button" class="ib" id="micBtn" title="Сказать голосом" aria-label="Сказать голосом">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      </button>
+      <button type="submit" class="ib send" title="Отправить" aria-label="Отправить">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+    <div class="hint"><span id="hintText">Пауза 3 секунды — и Полина ответит</span><span class="timer"><i id="timerBar"></i></span></div>
+    <div class="warn" id="warn" hidden></div>
+  </form>
+</section>
+<button class="chip mini" id="miniBtn" hidden>Разговор с Полиной</button>
+
+
+
+<script>
+/* Телефон: пока открыта клавиатура — компактный режим, всё в верхней половине экрана */
+(function(){
+  const isPhone = () => matchMedia("(max-width:640px), (max-height:520px)").matches;
+  const box = document.getElementById("dialog");
+  document.addEventListener("focusin", e => {
+    if (e.target && e.target.id === "msg" && isPhone()){ document.body.classList.add("kb"); const L=document.getElementById("log"); requestAnimationFrame(() => { L.scrollTop = L.scrollHeight; }); setTimeout(() => window.scrollTo(0,0), 60); setTimeout(() => window.scrollTo(0,0), 400); }
+  });
+  document.addEventListener("focusout", e => {
+    setTimeout(() => { const a = document.activeElement; if (!a || a.id !== "msg") { document.body.classList.remove("kb"); window.scrollTo(0,0); } }, 150);
+  });
+  if (window.visualViewport) window.visualViewport.addEventListener("scroll", () => { if (document.body.classList.contains("kb")) window.scrollTo(0,0); });
+})();
+
+
+const $ = s => document.querySelector(s);
+const log = $("#log"), msgEl = $("#msg"), warnEl = $("#warn");
+const talkV = $("#talk"), writeV = $("#write");
+const PAUSE_MS = 3000;
+const PENCIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg>';
+
+/* Фразы, которые Полина говорит своим голосом (папка say/) */
+const CLIPS = {
+  greet:"Здравствуйте! Меня зовут Полина, я секретарь Сержа. Его сейчас нет на месте, но я всё запишу.",
+  morning:"Доброе утро! Серж ещё не пришёл, но я всё запишу.",
+  evening:"Добрый вечер! Серж уже ушёл, но я всё запишу.",
+  name:"Как вас зовут?", nice:"Очень приятно!", what:"Что передать Сержу?", more:"Расскажите подробнее, пожалуйста.",
+  contact:"Как с вами связаться?", urgent:"Это срочно?", noting:"Хорошо, записываю.", done:"Всё записала, обязательно передам Сержу.",
+  bye:"Спасибо! Хорошего дня.", repeat:"Извините, не расслышала. Повторите, пожалуйста.", moment:"Секундочку.",
+  urgentok:"Поняла, это срочно. Передам Сержу в первую очередь.", else:"Что-нибудь ещё передать?", willcall:"Серж обязательно с вами свяжется.",
+  decide:"Я здесь только записываю, решения принимает Серж.", glad:"Рада была помочь! Приходите ещё."
+};
+function greetId(){ const h = new Date().getHours(); return h>=5&&h<12 ? "morning" : (h>=18||h<5) ? "evening" : "greet"; }
+
+/* Разговор хранится только в браузере посетителя */
+const KEY = "polina-session-v1";
+let state = { messages: [], note: null, tg: null, greet: null, at: Date.now() };
+try { const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s && Date.now() - (s.at||0) < 6*3600e3) state = s; } catch(e){}
+function persist(){ state.at = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+
+let busy=false, timer=null, timerStart=0, raf=0, started=false, saidMoment=false;
+let sound = true;
+try { sound = localStorage.getItem("polina-sound") !== "off"; } catch(e){}
+
+function showWarn(t){ warnEl.textContent = t||""; warnEl.hidden = !t; }
+
+/* ---------- Окно ---------- */
+function bubble(role, text){
+  const d = document.createElement("div"); d.className = "msg " + role;
+  const w = document.createElement("span"); w.className = "w";
+  w.textContent = role === "visitor" ? "Вы" : "Полина";
+  d.append(w, text); return d;
+}
+function renderLog(){
+  log.textContent = "";
+  log.append(bubble("polina", CLIPS[state.greet || greetId()]));
+  for (const m of state.messages){
+    if (m.role === "note"){ const n = document.createElement("div"); n.className="noted"; n.innerHTML = PENCIL; n.append("Записала для Сержа"); log.append(n); continue; }
+    log.append(bubble(m.role, m.text));
+  }
+  if (busy){ const t = bubble("polina","Полина пишет…"); t.classList.add("typing"); log.append(t); }
+  log.scrollTop = log.scrollHeight;
+}
+function openDialog(){
+  $("#dialog").hidden = false; $("#miniBtn").hidden = true; $("#cta").hidden = true;
+  renderLog(); setTimeout(() => msgEl.focus(), 50);
+}
+$("#minBtn").onclick = () => { $("#dialog").hidden = true; $("#miniBtn").hidden = false; };
+$("#miniBtn").onclick = openDialog;
+
+/* ---------- Видео ---------- */
+const blobs = {};
+(async () => { for (const id of Object.keys(CLIPS)){ try{ const r = await fetch("say/"+id+".mp4"); if (r.ok) blobs[id] = URL.createObjectURL(await r.blob()); }catch(e){} } })();
+function setEq(on){ $("#eq").classList.toggle("on", !!on); }
+function talking(){ return !talkV.paused && !talkV.ended; }
+/* play("name") или play(["nice","what"]) — несколько фраз подряд */
+let queue = [];
+function play(ids){ queue = [].concat(ids).filter(id => CLIPS[id]); playNext(); }
+function playNext(){
+  const id = queue.shift(); if (!id) return;
+  setWritingNow(false);
+  talkV.src = blobs[id] || ("say/"+id+".mp4");
+  talkV.muted = !sound;
+  const p = talkV.play();
+  if (p && p.then) p.then(() => setEq(true)).catch(() => { setEq(false); queue = []; });
+}
+talkV.addEventListener("ended", () => { if (queue.length) return playNext(); setEq(false); if (busy) setWriting(true); });
+talkV.addEventListener("pause", () => setEq(false));
+
+let writing = false, stopW = null;
+function setWritingNow(on){
+  writing = on;
+  if (on){ writeV.play().catch(()=>{}); talkV.classList.add("fade"); }
+  else { talkV.classList.remove("fade"); setTimeout(() => { if (!writing) writeV.pause(); }, 600); }
+}
+function setWriting(on){ if (on === writing) return; if (on && talking()) return; setWritingNow(on); }
+function activity(){ setWriting(true); clearTimeout(stopW); stopW = setTimeout(() => { if (!busy && !recOn) setWriting(false); }, 1500); }
+
+$("#cta").onclick = () => {
+  if (!started){ started = true; if (!state.messages.length){ state.greet = greetId(); persist(); } play(state.greet || greetId()); }
+  openDialog();
+};
+function syncSound(){ const b=$("#soundBtn"); b.setAttribute("aria-pressed", String(sound)); b.textContent = "Звук: " + (sound ? "вкл" : "выкл"); talkV.muted = !sound; }
+$("#soundBtn").onclick = () => { sound = !sound; try{ localStorage.setItem("polina-sound", sound?"on":"off"); }catch(e){} syncSound(); };
+syncSound();
+
+/* ---------- 3 секунды тишины ---------- */
+function armTimer(){
+  clearTimeout(timer); cancelAnimationFrame(raf);
+  if (!msgEl.value.trim()){ $("#timerBar").style.width = "0"; return; }
+  timerStart = performance.now();
+  const tick = () => { const p = Math.min(1,(performance.now()-timerStart)/PAUSE_MS); $("#timerBar").style.width = (p*100)+"%"; if (p<1) raf = requestAnimationFrame(tick); };
+  raf = requestAnimationFrame(tick);
+  timer = setTimeout(() => { if (!busy) send(); }, PAUSE_MS);
+}
+function stopTimer(){ clearTimeout(timer); cancelAnimationFrame(raf); $("#timerBar").style.width = "0"; }
+msgEl.addEventListener("input", () => { msgEl.style.height="auto"; msgEl.style.height = Math.min(110, msgEl.scrollHeight)+"px"; armTimer(); if (msgEl.value.trim()) activity(); });
+msgEl.addEventListener("keydown", e => { if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); send(); } });
+$("#form").addEventListener("submit", e => { e.preventDefault(); send(); });
+
+/* ---------- Микрофон ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec=null, recOn=false, recBase="";
+$("#micBtn").onclick = () => {
+  if (!SR){ showWarn("Этот браузер не распознаёт речь. Надиктуйте через микрофон на клавиатуре — Полина ответит после паузы."); return; }
+  if (recOn){ rec.stop(); return; }
+  try{ talkV.pause(); }catch(e){}
+  rec = new SR(); rec.lang="ru-RU"; rec.continuous=true; rec.interimResults=true;
+  recBase = msgEl.value ? msgEl.value.trim()+" " : "";
+  rec.onstart = () => { recOn=true; $("#micBtn").classList.add("rec"); $("#hintText").textContent="Слушаю… пауза 3 секунды — и отправлю"; showWarn(""); };
+  rec.onresult = e => { let f="",t=""; for (let i=0;i<e.results.length;i++){ const r=e.results[i]; r.isFinal ? (f+=r[0].transcript) : (t+=r[0].transcript); } msgEl.value=(recBase+f+t).trimStart(); armTimer(); activity(); };
+  rec.onerror = e => {
+    if (e.error==="not-allowed"||e.error==="service-not-allowed") showWarn("Разрешите доступ к микрофону в браузере или напишите сообщение.");
+    else if (e.error==="no-speech") play("repeat");
+    else if (e.error!=="aborted"){ showWarn("Не расслышала. Попробуйте ещё раз или напишите."); play("repeat"); }
+  };
+  rec.onend = () => { recOn=false; $("#micBtn").classList.remove("rec"); $("#hintText").textContent="Пауза 3 секунды — и Полина ответит"; };
+  try{ rec.start(); }catch(e){ showWarn("Микрофон недоступен. Напишите — Полина ответит после паузы."); }
+};
+
+/* ---------- Ответ Полины и поручение Сержу ---------- */
+async function send(){
+  const text = msgEl.value.trim(); if (!text || busy) return;
+  stopTimer(); if (recOn) try{ rec.stop(); }catch(e){}
+  msgEl.value=""; msgEl.style.height="auto";
+  state.messages.push({ role:"visitor", text: text.slice(0, 1500), at:Date.now() });
+  persist(); renderLog();
+  await polinaReply();
+}
+/* ---------- Бесплатный режим: Полина ведёт разговор по сценарию ----------
+   Работает, когда на сервере не задан ключ ИИ. Каждая реплика — её настоящий голос. */
+let aiMode = null; // null — ещё не знаем, true — есть ИИ, false — сценарий
+function scriptReply(text){
+  const n = state.note || (state.note = { name:"", contact:"", request:"", urgency:"" });
+  const t = text.trim(), step = state.step || 0;
+  const no = /^(нет|неа|не надо|ничего|всё|все|это всё|спасибо|no)(?=[\s,.!?]|$)/i.test(t);
+  let say;
+  if (step === 0){
+    const m = t.match(/(?:меня зовут|я\s*[-—,]?)\s+([А-ЯЁA-Z][а-яёa-z]+)/);
+    if (m) n.name = m[1];
+    const rest = m ? t.replace(m[0], "").replace(/^[\s,.!—-]*(здравствуйте|добрый\s+\S+|привет)?[\s,.!—-]*/i, "") : t;
+    if (rest.length > 25) n.request = rest;
+    if (n.name){ say = n.request ? ["nice","contact"] : ["nice","what"]; state.step = n.request ? 3 : 2; }
+    else { say = ["name"]; state.step = 1; }
+  } else if (step === 1){
+    n.name = t.replace(/^(меня зовут|я)\s+/i, "").slice(0, 120);
+    say = n.request ? ["nice","contact"] : ["nice","what"]; state.step = n.request ? 3 : 2;
+  } else if (step === 2){
+    n.request = n.request ? n.request + "\n" + t : t;
+    if (t.length < 15 && !state.askedMore){ state.askedMore = true; say = ["more"]; }
+    else { say = ["contact"]; state.step = 3; }
+  } else if (step === 3){
+    n.contact = t.slice(0, 200); say = ["urgent"]; state.step = 4;
+  } else if (step === 4){
+    const urgent = /(да|сроч|горит|быстр|сегодня)/i.test(t) && !/^не/i.test(t);
+    n.urgency = urgent ? "срочно" : "обычно";
+    say = urgent ? ["urgentok","else"] : ["done","else"]; state.step = 5;
+  } else if (no){
+    say = ["bye"]; state.step = 6;
+  } else {
+    n.request = (n.request ? n.request + "\n" : "") + t;
+    say = ["noting","else"]; state.step = 5;
+  }
+  return say;
+}
+async function polinaReply(){
+  if (aiMode === false) return scriptTurn();
+  busy = true; renderLog(); setWriting(true);
+  const waitT = setTimeout(() => { if (busy && !saidMoment){ saidMoment = true; play("moment"); } }, 3000);
+  try{
+    const r = await fetch("/api/polina", { method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ greet: state.greet || greetId(), note: state.note, messages: state.messages.filter(m=>m.role!=="note").slice(-24).map(m=>({ role:m.role, text:m.text })) }) });
+    const out = await r.json().catch(() => ({}));
+    if (out && out.nokey){ aiMode = false; busy = false; clearTimeout(waitT); return scriptTurn(); }
+    if (!r.ok || !out.reply) throw new Error(out.error || "bad");
+    aiMode = true;
+    const prev = JSON.stringify(state.note||{});
+    if (out.note) state.note = out.note;
+    const changed = JSON.stringify(state.note||{}) !== prev && state.note && (state.note.request || state.note.name);
+    busy = false; clearTimeout(waitT);
+    if (changed) state.messages.push({ role:"note", text:"", at:Date.now() });
+    state.messages.push({ role:"polina", text: out.reply, at:Date.now() });
+    persist(); renderLog();
+    play(CLIPS[out.say] ? out.say : "noting");
+    if (changed && state.note.request) sendTask();
+  }catch(e){
+    busy = false; clearTimeout(waitT);
+    if (aiMode !== true){ aiMode = false; return scriptTurn(); } // нет сервера с ИИ (например, GitHub Pages) — сценарий
+    state.messages.push({ role:"polina", text:"Записала ваше сообщение для Сержа. Оставьте, пожалуйста, контакт для ответа.", at:Date.now() });
+    persist(); renderLog(); setWritingNow(false); play("noting");
+    sendTask();
+  }
+}
+async function scriptTurn(){
+  const last = [...state.messages].reverse().find(m => m.role === "visitor");
+  busy = true; renderLog(); setWriting(true);
+  await new Promise(r => setTimeout(r, 900));          // Полина «записывает»
+  const prevReq = (state.note && state.note.request) || "";
+  const say = scriptReply(last ? last.text : "");
+  busy = false;
+  if (state.note.request && state.note.request !== prevReq) state.messages.push({ role:"note", text:"", at:Date.now() });
+  state.messages.push({ role:"polina", text: say.map(id => CLIPS[id]).join(" "), at:Date.now() });
+  persist(); renderLog(); play(say);
+  if (state.note.request && (state.step || 0) >= 3) sendTask();
+}
+async function sendTask(){
+  try{
+    const r = await fetch("/api/task", { method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ tg: state.tg, note: state.note, messages: state.messages.filter(m=>m.role!=="note").slice(-30).map(m=>({ role:m.role, text:m.text })) }) });
+    const out = await r.json().catch(() => ({}));
+    if (out && out.message_id){ state.tg = out.message_id; persist(); }
+  }catch(e){}
+}
+</script>
+</body>
+</html>

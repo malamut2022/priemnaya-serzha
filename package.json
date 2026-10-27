@@ -1,0 +1,6 @@
+{
+  "name": "priemnaya-serzha",
+  "private": true,
+  "description": "Приёмная Сержа: виртуальный секретарь Полина",
+  "engines": { "node": ">=20" }
+}
