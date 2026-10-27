@@ -8,7 +8,7 @@ exports.handler = (event) => new Promise((resolve) => {
   let code = 200;
   const res = {
     status(c) { code = c; return res; },
-    json(o) { resolve({ statusCode: code, headers: { "Content-Type": "application/json" }, body: JSON.stringify(o) }); },
+    json(o) { resolve({ statusCode: code, headers: { "Content-Type": "application/json; charset=utf-8" }, body: JSON.stringify(o) }); },
   };
   Promise.resolve(handler(req, res)).catch((e) => resolve({ statusCode: 500, body: JSON.stringify({ error: String(e) }) }));
 });

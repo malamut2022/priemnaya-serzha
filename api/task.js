@@ -11,10 +11,17 @@ async function tg(method, payload) {
 }
 
 // Если TELEGRAM_CHAT_ID не задан — берём чат того, кто последним написал боту (это вы после /start).
+let lastUpdatesError = "";
 async function chatId() {
   if (process.env.TELEGRAM_CHAT_ID) return process.env.TELEGRAM_CHAT_ID;
-  const u = await tg("getUpdates", { limit: 100 });
-  const list = (u.result || []).map(x => x.message || x.my_chat_member || {}).filter(m => m.chat);
+  let u = await tg("getUpdates", { limit: 100 });
+  // Если у бота включён вебхук (например, его подключило приложение BotFather), getUpdates не работает — отключаем вебхук.
+  if (!u.ok && /webhook/i.test(u.description || "")) {
+    await tg("deleteWebhook", { drop_pending_updates: false });
+    u = await tg("getUpdates", { limit: 100 });
+  }
+  lastUpdatesError = u.ok ? "" : (u.description || "getUpdates error");
+  const list = (u.result || []).map(x => x.message || x.edited_message || x.my_chat_member || {}).filter(m => m.chat && m.chat.type === "private");
   return list.length ? list[list.length - 1].chat.id : null;
 }
 
@@ -24,7 +31,7 @@ async function selfTest(res) {
   const me = await tg("getMe", {});
   if (!me.ok) return res.status(200).json({ ok: false, reason: "Telegram не принял токен — скопируйте его заново из @BotFather", telegram: me.description });
   const chat_id = await chatId();
-  if (!chat_id) return res.status(200).json({ ok: false, bot: "@" + me.result.username, reason: "Бот не знает, куда писать: откройте @" + me.result.username + " в Telegram, нажмите Start (или отправьте /start) и обновите эту страницу" });
+  if (!chat_id) return res.status(200).json({ ok: false, bot: "@" + me.result.username, reason: "Бот не знает, куда писать: откройте @" + me.result.username + " в Telegram, отправьте /start и обновите эту страницу", telegram: lastUpdatesError || "нет новых сообщений боту" });
   const fixed = !!process.env.TELEGRAM_CHAT_ID;
   const s = await tg("sendMessage", { chat_id, text: "✅ Приёмная Сержа подключена. Сюда будут приходить поручения от Полины." + (fixed ? "" : "\n\nВаш номер чата: " + chat_id + "\nДобавьте его в Netlify как TELEGRAM_CHAT_ID, чтобы поручения всегда шли только вам.") });
   return res.status(200).json(s.ok
