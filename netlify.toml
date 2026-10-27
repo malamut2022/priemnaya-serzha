@@ -1,0 +1,10 @@
+# Настройки для Netlify: сайт лежит в корне, серверные функции — в netlify/functions.
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Сайт обращается к /api/polina и /api/task — перенаправляем их в функции Netlify.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200

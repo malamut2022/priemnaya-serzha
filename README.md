@@ -72,3 +72,10 @@
 
 ## Исходные требования
 Первоначальные требования к Полине — в файле `REQUIREMENTS.md`.
+
+## Вместо Vercel — Netlify (если Vercel не пускает)
+1. app.netlify.com → **Sign up with GitHub**.
+2. **Add new site → Import an existing project → GitHub** → выберите `priemnaya-serzha`.
+3. Ничего не меняйте в настройках сборки (всё описано в `netlify.toml`).
+4. **Add environment variables**: `TELEGRAM_BOT_TOKEN` = токен бота (и при желании ключ ИИ).
+5. **Deploy**. Адрес будет вида `имя.netlify.app`; поменять имя можно в Site configuration → Change site name.
