@@ -1,6 +1,6 @@
 // Отправляет поручение Сержу в Telegram. Одно сообщение на посетителя:
 // когда разговор продолжается, сообщение в Telegram обновляется, а не дублируется.
-const { BOSS } = require("./_polina-config.js");
+const { BOSS, TELEGRAM_CHAT_ID } = require("./_polina-config.js");
 const API = () => "https://api.telegram.org/bot" + process.env.TELEGRAM_BOT_TOKEN + "/";
 
 const esc = s => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -14,6 +14,7 @@ async function tg(method, payload) {
 let lastUpdatesError = "";
 async function chatId() {
   if (process.env.TELEGRAM_CHAT_ID) return process.env.TELEGRAM_CHAT_ID;
+  if (TELEGRAM_CHAT_ID) return TELEGRAM_CHAT_ID;
   let u = await tg("getUpdates", { limit: 100 });
   // Если у бота включён вебхук (например, его подключило приложение BotFather), getUpdates не работает — отключаем вебхук.
   if (!u.ok && /webhook/i.test(u.description || "")) {
@@ -32,7 +33,7 @@ async function selfTest(res) {
   if (!me.ok) return res.status(200).json({ ok: false, reason: "Telegram не принял токен — скопируйте его заново из @BotFather", telegram: me.description });
   const chat_id = await chatId();
   if (!chat_id) return res.status(200).json({ ok: false, bot: "@" + me.result.username, reason: "Бот не знает, куда писать: откройте @" + me.result.username + " в Telegram, отправьте /start и обновите эту страницу", telegram: lastUpdatesError || "нет новых сообщений боту" });
-  const fixed = !!process.env.TELEGRAM_CHAT_ID;
+  const fixed = !!(process.env.TELEGRAM_CHAT_ID || TELEGRAM_CHAT_ID);
   const s = await tg("sendMessage", { chat_id, text: "✅ Приёмная Сержа подключена. Сюда будут приходить поручения от Полины." + (fixed ? "" : "\n\nВаш номер чата: " + chat_id + "\nДобавьте его в Netlify как TELEGRAM_CHAT_ID, чтобы поручения всегда шли только вам.") });
   return res.status(200).json(s.ok
     ? { ok: true, bot: "@" + me.result.username, message: "Тестовое сообщение отправлено — проверьте Telegram", chat_id: String(chat_id),

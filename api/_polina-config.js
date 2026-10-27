@@ -53,4 +53,8 @@ const LIMITS = {
   maxVisitorMessages: 40,   // сообщений посетителя в одном разговоре
 };
 
-module.exports = { BOSS, INSTRUCTIONS, PHRASES, GREETINGS, LIMITS };
+// Кому в Telegram приходят поручения (номер чата Сержа; узнать свой — через @userinfobot).
+// Переменная TELEGRAM_CHAT_ID в настройках Netlify/Vercel, если задана, важнее этого значения.
+const TELEGRAM_CHAT_ID = "706853770";
+
+module.exports = { BOSS, INSTRUCTIONS, PHRASES, GREETINGS, LIMITS, TELEGRAM_CHAT_ID };
