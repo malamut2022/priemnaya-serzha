@@ -208,6 +208,7 @@ details summary{cursor:pointer;font-size:13px;color:var(--muted)}
 
 
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 /* Телефон: пока открыта клавиатура — компактный режим, всё в верхней половине экрана */
 (function(){
@@ -246,6 +247,18 @@ function greetId(){ const h = new Date().getHours(); return h>=5&&h<12 ? "mornin
 const KEY = "polina-session-v1";
 let state = { messages: [], note: null, tg: null, greet: null, at: Date.now() };
 try { const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s && Date.now() - (s.at||0) < 6*3600e3) state = s; } catch(e){}
+
+/* Открыто внутри Telegram: имя и @username берём из Telegram, лишних вопросов не задаём */
+const TG = window.Telegram && window.Telegram.WebApp;
+const tgUser = TG && TG.initDataUnsafe && TG.initDataUnsafe.user;
+if (TG && TG.initData){ try { TG.ready(); TG.expand(); } catch(e){} }
+if (tgUser){
+  state.note = state.note || { name:"", contact:"", request:"", urgency:"" };
+  if (!state.note.name) state.note.name = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ").slice(0, 120);
+  if (!state.note.contact && tgUser.username) state.note.contact = "Telegram @" + tgUser.username;
+  state.tgUser = { id: tgUser.id, username: tgUser.username || "" };
+  if (!state.step) state.step = 2;   // имя уже известно — сразу «что передать»
+}
 function persist(){ state.at = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
 
 let busy=false, timer=null, timerStart=0, raf=0, started=false, saidMoment=false;
@@ -263,7 +276,7 @@ function bubble(role, text){
 }
 function renderLog(){
   log.textContent = "";
-  log.append(bubble("polina", CLIPS[state.greet || greetId()]));
+  log.append(bubble("polina", CLIPS[state.greet || greetId()] + (state.tgUser ? " " + CLIPS.what : "")));
   for (const m of state.messages){
     if (m.role === "note"){ const n = document.createElement("div"); n.className="noted"; n.innerHTML = PENCIL; n.append("Записала для Сержа"); log.append(n); continue; }
     log.append(bubble(m.role, m.text));
@@ -307,7 +320,7 @@ function setWriting(on){ if (on === writing) return; if (on && talking()) return
 function activity(){ setWriting(true); clearTimeout(stopW); stopW = setTimeout(() => { if (!busy && !recOn) setWriting(false); }, 1500); }
 
 $("#cta").onclick = () => {
-  if (!started){ started = true; if (!state.messages.length){ state.greet = greetId(); persist(); } play(state.greet || greetId()); }
+  if (!started){ started = true; if (!state.messages.length){ state.greet = greetId(); persist(); } play(state.tgUser ? [state.greet || greetId(), "what"] : (state.greet || greetId())); }
   openDialog();
 };
 function syncSound(){ const b=$("#soundBtn"); b.setAttribute("aria-pressed", String(sound)); b.textContent = "Звук: " + (sound ? "вкл" : "выкл"); talkV.muted = !sound; }
@@ -378,6 +391,7 @@ function scriptReply(text){
   } else if (step === 2){
     n.request = n.request ? n.request + "\n" + t : t;
     if (t.length < 15 && !state.askedMore){ state.askedMore = true; say = ["more"]; }
+    else if (n.contact){ say = ["urgent"]; state.step = 4; }   // контакт уже есть (Telegram)
     else { say = ["contact"]; state.step = 3; }
   } else if (step === 3){
     n.contact = t.slice(0, 200); say = ["urgent"]; state.step = 4;
@@ -436,7 +450,7 @@ async function scriptTurn(){
 async function sendTask(){
   try{
     const r = await fetch("/api/task", { method:"POST", headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ tg: state.tg, note: state.note, messages: state.messages.filter(m=>m.role!=="note").slice(-30).map(m=>({ role:m.role, text:m.text })) }) });
+      body: JSON.stringify({ tg: state.tg, tgUser: state.tgUser || null, note: state.note, messages: state.messages.filter(m=>m.role!=="note").slice(-30).map(m=>({ role:m.role, text:m.text })) }) });
     const out = await r.json().catch(() => ({}));
     if (out && out.message_id){ state.tg = out.message_id; persist(); }
   }catch(e){}

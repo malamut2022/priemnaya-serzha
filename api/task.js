@@ -53,8 +53,12 @@ module.exports = async (req, res) => {
     .map(m => (m.role === "visitor" ? "👤 " : "💬 ") + esc(m.text.slice(0, 500)));
   const urgent = /сроч/i.test(n.urgency || "");
 
-  let text = `${urgent ? "🔴 <b>СРОЧНО</b>\n" : ""}📝 <b>Поручение для ${esc(BOSS)}а</b>\n\n` +
-    `<b>Кто:</b> ${esc(n.name) || "не представился"}\n` +
+  const tu = body && body.tgUser && /^\d+$/.test(String(body.tgUser.id)) ? body.tgUser : null;
+  const uname = tu && /^[A-Za-z0-9_]{3,32}$/.test(tu.username || "") ? tu.username : "";
+  const who = (esc(n.name) || "не представился") +
+    (uname ? ` — <a href="https://t.me/${uname}">написать @${uname}</a>` : tu ? ` — <a href="tg://user?id=${tu.id}">профиль в Telegram</a>` : "");
+  let text = `${urgent ? "🔴 <b>СРОЧНО</b>\n" : ""}📝 <b>Поручение для ${esc(BOSS)}а</b>${tu ? " (из Telegram)" : ""}\n\n` +
+    `<b>Кто:</b> ${who}\n` +
     `<b>Что передать:</b> ${esc(n.request) || "—"}\n` +
     `<b>Контакт:</b> ${esc(n.contact) || "не оставил"}\n` +
     `<b>Срочность:</b> ${esc(n.urgency) || "обычно"}\n\n<b>Разговор:</b>\n` + msgs.join("\n");
@@ -65,10 +69,10 @@ module.exports = async (req, res) => {
     if (!chat_id) return res.status(200).json({ skipped: "Напишите боту /start, чтобы он узнал ваш чат" });
     const id = Number(body.tg) || 0;
     if (id) {
-      const e = await tg("editMessageText", { chat_id, message_id: id, text, parse_mode: "HTML" });
+      const e = await tg("editMessageText", { chat_id, message_id: id, text, parse_mode: "HTML", link_preview_options: { is_disabled: true } });
       if (e.ok || /not modified/i.test(e.description || "")) return res.status(200).json({ message_id: id });
     }
-    const s = await tg("sendMessage", { chat_id, text, parse_mode: "HTML" });
+    const s = await tg("sendMessage", { chat_id, text, parse_mode: "HTML", link_preview_options: { is_disabled: true } });
     if (!s.ok) throw new Error(s.description);
     res.status(200).json({ message_id: s.result.message_id });
   } catch (e) {
