@@ -257,7 +257,7 @@ if (tgUser){
   if (!state.note.name) state.note.name = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(" ").slice(0, 120);
   if (!state.note.contact && tgUser.username) state.note.contact = "Telegram @" + tgUser.username;
   state.tgUser = { id: tgUser.id, username: tgUser.username || "" };
-  if (!state.step) state.step = 2;   // имя уже известно — сразу «что передать»
+  if ((state.step || 0) < 2) state.step = 2;   // имя уже известно — сразу «что передать»
 }
 function persist(){ state.at = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
 
